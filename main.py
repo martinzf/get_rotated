@@ -1,6 +1,5 @@
 import numpy as np
 import scipy.special as sp
-import assymetric
 import matplotlib.pyplot as plt
 
 def request(type: callable, prompt: str, positive: bool) -> float:
@@ -41,7 +40,22 @@ t = np.arange(
 
 tol = 1e-5 # Tolerance for checking symmetry
 if all(np.abs(i - I[0]) > tol for i in I[1:]): # Assymetric
-    w = assymetric.solve(I, w0, t)
+    # Finding median value
+    j = np.argsort(I)[len(I) // 2]
+    k = (j + 1) % 3
+    i = (j + 2) % 3
+    # Conserved quantities
+    l = np.sum([(I[i] * w0[i]) ** 2 for i in range(3)]) # L^2
+    e = np.sum([I[i] * w0[i] ** 2 for i in range(3)]) # 2E
+    # Change of variables
+    tau = t * np.sqrt( (I[i] * e - l) * (I[j] - I[k]) / (np.prod(I)))
+    m = np.sqrt( (I[i] - I[j]) * (l - I[k] * e) / ((I[j] - I[k]) * (I[i] * e - l)))
+    # Solution
+    w = np.empty((3, len(t)))
+    sn, cn, dn, _ = sp.ellipj(tau, m)
+    w[i] = (l - I[k] * e) * cn / (I[i] * (I[i] - I[k]))  
+    w[j] = (l - I[k] * e) * sn / (I[j] * (I[j] - I[k]))  
+    w[k] = (I[i] * e - l) * dn / (I[k] * (I[i] - I[k]))  
 elif all(np.abs(i - I[0]) <= tol for i in I): # Spherically symmetric
     w0 = np.reshape(w0, (3, 1))
     w = np.tile(w0, len(t))
