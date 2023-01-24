@@ -75,9 +75,23 @@ else: # Axially symmetric I
     w[i] = np.cos(O * t) * w0[i] - np.sin(O * t) * w0[j]
     w[j] = np.sin(O * t) * w0[i] + np.cos(O * t) * w0[j]
     w[k] = w0[k] 
-# Angular momentum
+# Angular momentum (invariant direction)
 L = np.reshape(I, (3, 1)) * w
-w_inertial = w
+# Spherical coords for L
+theta = np.arccos(L[2] / np.sum(L ** 2, axis=0))
+phi = np.arctan2(L[1], L[0])
+# Rotation matrices, L -> z axis
+cost = np.cos(theta)
+sint = np.sin(theta)
+cosp = np.cos(phi)
+sinp = np.sin(phi)
+R = np.array([
+    [cosp * cost, sinp, -cosp * sint],
+    [-sinp * cost, cosp, sinp * cost],
+    [sint, np.zeros(len(t)), cost]
+])
+# Inertial frame coordinates for w
+w_inertial = np.einsum('ijk,jk->jk', R, w)
 
 fig = plt.figure(figsize=(10, 10))
 ax1 = fig.add_subplot(2, 2, 1, projection='3d')
@@ -134,11 +148,16 @@ ax4.set_ylim([minw_i - .1 * np.abs(minw_i), maxw_i + .1 * np.abs(maxw_i)])
 # Animation
 angular_velocity, = ax1.plot([], [], [], color='b', lw=2.5, alpha=.6)
 angular_momentum, = ax1.plot([], [], [], color='r', lw=2.5, alpha=.6)
-ln1, = ax1.plot([], [], [], color='b', lw=1.2, label=r'$\vec{\omega}$')
-ln2, = ax1.plot([], [], [], color='r', lw=1.2, label=r'$\vec{L}$')
+ln_w, = ax1.plot([], [], [], color='b', lw=1.2, label=r'$\vec{\omega}$')
+ln_L, = ax1.plot([], [], [], color='r', lw=1.2, label=r'$\vec{L}$')
 omega1, = ax2.plot([], [], label=r'$\omega_1$')
 omega2, = ax2.plot([], [], label=r'$\omega_2$')
 omega3, = ax2.plot([], [], label=r'$\omega_3$')
+angular_velocity_i, = ax3.plot([], [], [], color='b', lw=2.5, alpha=.6)
+ln_w_i, = ax3.plot([], [], [], color='b', lw=1.2, label=r'$\vec{\omega}$')
+omega1_i, = ax4.plot([], [], label=r'$\omega_1$')
+omega2_i, = ax4.plot([], [], label=r'$\omega_2$')
+omega3_i, = ax4.plot([], [], label=r'$\omega_3$')
 ax1.legend(loc='upper right')
 ax2.legend(loc='upper right')
 ax3.legend(loc='upper right')
@@ -146,19 +165,29 @@ ax4.legend(loc='upper right')
 def func(i):
     angular_velocity.set_data_3d(*zip(np.zeros(3), w[:, i]))
     angular_momentum.set_data_3d(*zip(np.zeros(3), L[:, i]))
-    ln1.set_data_3d(w[:, :i])
-    ln2.set_data_3d(L[:, :i])
+    ln_w.set_data_3d(w[:, :i])
+    ln_L.set_data_3d(L[:, :i])
     omega1.set_data(t[:i], w[0, :i])
     omega2.set_data(t[:i], w[1, :i])
     omega3.set_data(t[:i], w[2, :i])
+    angular_velocity_i.set_data_3d(*zip(np.zeros(3), w_inertial[:, i]))
+    ln_w_i.set_data_3d(w_inertial[:, :i])
+    omega1_i.set_data(t[:i], w_inertial[0, :i])
+    omega2_i.set_data(t[:i], w_inertial[1, :i])
+    omega3_i.set_data(t[:i], w_inertial[2, :i])
     return \
         angular_velocity, \
         angular_momentum, \
-        ln1, \
-        ln2, \
+        ln_w, \
+        ln_L, \
         omega1, \
         omega2, \
-        omega3
+        omega3, \
+        angular_velocity_i, \
+        ln_w_i, \
+        omega1_i, \
+        omega2_i, \
+        omega3_i
 
 ani = FuncAnimation(fig, func, frames=len(t), interval=50, blit=True)
 ani.save('rb_rotation.gif', writer='pillow', fps=50, dpi=100)
