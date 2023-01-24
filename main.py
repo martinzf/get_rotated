@@ -44,21 +44,25 @@ if all(i != I[0] for i in I[1:]): # Assymetric
     j = np.argsort(I)[len(I) // 2]
     k = (j + 1) % 3
     i = (j + 2) % 3
-    # Conserved quantities
-    l = np.sum([(I[i] * w0[i]) ** 2 for i in range(3)]) # L^2
-    e = np.sum([I[i] * w0[i] ** 2 for i in range(3)]) # 2T
-    # Change of variables
-    tau = t * np.sqrt( (I[i] * e - l) * (I[j] - I[k]) / (np.prod(I)))
-    # Initial conditions
-    s0 = w0[j] * np.sqrt(I[j] * (I[j] - I[k]) / (l - e * I[k]))
-    m = (I[i] - I[j]) * (l - I[k] * e) / ((I[j] - I[k]) * (I[i] * e - l))
-    tau += sp.ellipkinc(np.arcsin(s0), m)
-    # Solution
-    w = np.empty((3, len(t)))
-    sn, cn, dn, _ = sp.ellipj(tau, m)
-    w[i] = np.sqrt((l - I[k] * e) / (I[i] * (I[i] - I[k]))) * cn  
-    w[j] = np.sqrt((l - I[k] * e) / (I[j] * (I[j] - I[k]))) * sn  
-    w[k] = np.sqrt((I[i] * e - l) / (I[k] * (I[i] - I[k]))) * dn 
+    if (w0.count(0) == 2): # w along an axis (2 axis unstable!!)
+        w0 = np.reshape(w0, (3, 1))
+        w = np.tile(w0, len(t))  
+    else:  
+        # Conserved quantities
+        l = np.sum([(I[i] * w0[i]) ** 2 for i in range(3)]) # L^2
+        e = np.sum([I[i] * w0[i] ** 2 for i in range(3)]) # 2T
+        # Change of variables
+        tau = t * np.sqrt( (I[i] * e - l) * (I[j] - I[k]) / (np.prod(I)))
+        # Initial conditions
+        s0 = w0[j] * np.sqrt(I[j] * (I[j] - I[k]) / (l - e * I[k]))
+        m = (I[i] - I[j]) * (l - I[k] * e) / ((I[j] - I[k]) * (I[i] * e - l))
+        tau += sp.ellipkinc(np.arcsin(s0), m)
+        # Solution
+        w = np.empty((3, len(t)))
+        sn, cn, dn, _ = sp.ellipj(tau, m)
+        w[i] = np.sqrt((l - I[k] * e) / (I[i] * (I[i] - I[k]))) * cn  
+        w[j] = np.sqrt((l - I[k] * e) / (I[j] * (I[j] - I[k]))) * sn  
+        w[k] = np.sqrt((I[i] * e - l) / (I[k] * (I[i] - I[k]))) * dn 
 elif all(i == I[0] for i in I): # Spherically symmetric
     w0 = np.reshape(w0, (3, 1))
     w = np.tile(w0, len(t))
@@ -80,7 +84,7 @@ fig = plt.figure(figsize=(10, 10))
 ax1 = fig.add_subplot(2, 1, 1, projection='3d')
 ax2 = fig.add_subplot(2, 1, 2)
 
-# Axis one
+# Axis 1
 ax1.set_title('Body frame', fontdict={'size': 15})
 lim1 = np.max([w, L])
 ax1.set_xlim([-lim1, lim1])
@@ -92,9 +96,11 @@ ax1.yaxis.set_pane_color((1, 1, 1, 0))
 ax1.zaxis.set_pane_color((1, 1, 1, 0))
 ax1._axis3don = False
 
-# Axis two
+# Axis 2
+minw = np.min(w)
+maxw = np.max(w)
 ax2.set_xlim([0, t[-1]])
-ax2.set_ylim([np.min(w), np.max(w)])
+ax2.set_ylim([minw - .1 * np.abs(minw), maxw + .1 * np.abs(maxw)])
 
 # Animation
 ln1, = ax1.plot([], [], [], color='b', lw=1.2, label=r'$\vec{\omega}$')
@@ -109,8 +115,8 @@ def func(i):
     global angular_momentum
     angular_velocity.remove()
     angular_momentum.remove()
-    angular_velocity = ax1.quiver(0, 0, 0, *w[:, i], color='b', arrow_length_ratio=.1, alpha=.6)
-    angular_momentum = ax1.quiver(0, 0, 0, *L[:, i], color='r', arrow_length_ratio=.1, alpha=.6)
+    angular_velocity = ax1.quiver(0, 0, 0, *w[:, i], color='b', arrow_length_ratio=.1, lw=2.5, alpha=.6)
+    angular_momentum = ax1.quiver(0, 0, 0, *L[:, i], color='r', arrow_length_ratio=.1, lw=2.5, alpha=.6)
     ln1.set_data_3d(w[:, :i])
     ln2.set_data_3d(L[:, :i])
     omega1.set_data(t[:i], w[0, :i])
@@ -135,3 +141,8 @@ ani = FuncAnimation(fig, func, frames=len(t), init_func=init_func, interval=50)
 ani.save('rb_rotation.gif', writer='pillow', fps=50, dpi=100)
 
 plt.show()
+
+# Problems
+# w1, w2 = 0
+# w1, w3 = 0
+# w3 = 0
