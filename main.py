@@ -84,22 +84,25 @@ else: # Axially symmetric I
         w[k] = w0[k] 
 # Angular momentum (invariant direction)
 L = np.reshape(I, (3, 1)) * w
-# Spherical coords for L
-theta = np.arccos(L[2] / np.linalg.norm(L, axis=0))
-phi = np.arctan2(L[1], L[0])
-# Rotation matrices, L -> z axis
-cost = np.cos(theta)
-sint = np.sin(theta)
-cosp = np.cos(phi)
-sinp = np.sin(phi)
-R = np.array([
-    [cost, np.zeros(len(t)), - sint],
-    [np.zeros(len(t)), cosp, np.zeros(len(t))],
-    [sint, np.zeros(len(t)), cost]
-])
-# Inertial frame coordinates for w
-w_inertial = np.einsum('ijk,jk->ik', R, w)
-L_inertial = np.einsum('ijk,jk->ik', R, L)
+# Precession about L
+alpha = np.arctan2(np.linalg.norm(w[:2], axis=0), w[2])
+theta = np.arctan2(np.linalg.norm(L[:2], axis=0), L[2])
+a = np.linalg.norm(w, axis=0)
+Op = np.linalg.norm(w, axis=0) * np.sin(alpha) / np.sin(theta)
+# Position of w in the inertial frame
+elev = np.abs(theta - alpha)
+azim = np.cumsum(Op) * dt
+w_inertial = np.linalg.norm(w, axis=0) * np.array([
+    np.cos(azim) * np.sin(elev),
+    np.sin(azim) * np.sin(elev),
+    np.cos(elev)
+    ])
+# Position of e3 basis vector in inertial frame
+e3 = np.linalg.norm(w[:, 0]) * np.array([
+    np.cos(azim) * np.sin(theta),
+    np.sin(azim) * np.sin(theta),
+    np.cos(elev)
+    ])
 
 fig = plt.figure(figsize=(10, 10))
 ax1 = fig.add_subplot(2, 2, 1, projection='3d')
@@ -114,7 +117,7 @@ ax1.set_xlim([-lim1, lim1])
 ax1.set_ylim([-lim1, lim1])
 ax1.set_zlim([-lim1, lim1])
 ax3.set_title('Inertial frame', fontdict={'size': 15})
-lim3 = np.max([np.max(np.abs(w_inertial)), np.linalg.norm(L[:, 0])])
+lim3 = np.max(np.abs(w_inertial))
 ax3.set_xlim([-lim3, lim3])
 ax3.set_ylim([-lim3, lim3])
 ax3.set_zlim([-lim3, lim3])
@@ -166,7 +169,9 @@ omega2, = ax2.plot([], [], label=r'$\omega_2$')
 omega3, = ax2.plot([], [], label=r'$\omega_3$')
 angular_velocity_i, = ax3.plot([], [], [], color='b', lw=2.5, alpha=.6, label=r'$\vec{\omega}$')
 angular_momentum_i, = ax3.plot([0, 0], [0, 0], [0, np.linalg.norm(L[:, 0])], color='r', lw=2.5, alpha=.6, label=r'$\vec{L}$')
+e3_vector, = ax3.plot([], [], [], color='g', lw=2.5, alpha=.6, label=r'$\vec{e}_3$')
 ln_w_i, = ax3.plot([], [], [], color='b', lw=1.2)
+ln_e3, = ax3.plot([], [], [], color='g', lw=1.2)
 omega1_i, = ax4.plot([], [], label=r'$\omega_1$')
 omega2_i, = ax4.plot([], [], label=r'$\omega_2$')
 omega3_i, = ax4.plot([], [], label=r'$\omega_3$')
@@ -183,7 +188,9 @@ def func(i):
     omega2.set_data(t[:i], w[1, :i])
     omega3.set_data(t[:i], w[2, :i])
     angular_velocity_i.set_data_3d(*zip(np.zeros(3), w_inertial[:, i]))
+    e3_vector.set_data_3d(*zip(np.zeros(3), e3[:, i]))
     ln_w_i.set_data_3d(w_inertial[:, :i])
+    ln_e3.set_data_3d(e3[:, :i])
     omega1_i.set_data(t[:i], w_inertial[0, :i])
     omega2_i.set_data(t[:i], w_inertial[1, :i])
     omega3_i.set_data(t[:i], w_inertial[2, :i])
@@ -196,7 +203,9 @@ def func(i):
         omega2, \
         omega3, \
         angular_velocity_i, \
+        e3_vector, \
         ln_w_i, \
+        ln_e3, \
         omega1_i, \
         omega2_i, \
         omega3_i
