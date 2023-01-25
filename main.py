@@ -6,6 +6,8 @@ from matplotlib.animation import FuncAnimation
 # Time step
 dt = .02
 
+default_duration = 3
+
 def request_float(prompt: str, positive: bool) -> float:
     # Gets user input
     while True:
@@ -24,7 +26,7 @@ print(
     'centered at a point fixed in the body frame and an external inertial frame.'
     )
 
-# Moment of inertia tensor in principal axes of inertia body frame
+# Moment of inertia tensor in body frame
 print('Input the inertia tensor in the body frame.')
 I = []
 for i in range(1, 4):
@@ -37,7 +39,7 @@ for i in range(1, 4):
     w0.append(request_float(f'w{i} (rad/s): ', False))
 
 if (w0.count(0) == 2) or all(i == I[0] for i in I): # w along principal axis or spherical symmetry
-    t = np.arange(0, 3, dt)
+    t = np.arange(0, default_duration, dt)
     w0 = np.reshape(w0, (3, 1))
     w = np.tile(w0, len(t))
 elif all(i != I[0] for i in I[1:]): # Assymetric I
@@ -68,17 +70,22 @@ else: # Axially symmetric I
     k = np.argmax(np.abs(I-np.median(I))) 
     i = (k + 1) % 3
     j = (k + 2) % 3
-    # Precession of w around symmetry axis (in body frame)
-    O = (I[k] - I[i]) / I[i] 
-    t = np.arange(0, 2 * np.pi / O, dt)
-    w = np.empty((3, len(t)))
-    w[i] = np.cos(O * t) * w0[i] - np.sin(O * t) * w0[j]
-    w[j] = np.sin(O * t) * w0[i] + np.cos(O * t) * w0[j]
-    w[k] = w0[k] 
+    if w0[k] == 0: # w along axis perpendicular to symmetry axis
+        t = np.arange(0, default_duration, dt)
+        w0 = np.reshape(w0, (3, 1))
+        w = np.tile(w0, len(t))
+    else:
+        # Precession of w around symmetry axis (in body frame)
+        O = (I[k] - I[i]) / I[i] 
+        t = np.arange(0, 2 * np.pi / np.abs(O), dt)
+        w = np.empty((3, len(t)))
+        w[i] = np.cos(O * t) * w0[i] - np.sin(O * t) * w0[j]
+        w[j] = np.sin(O * t) * w0[i] + np.cos(O * t) * w0[j]
+        w[k] = w0[k] 
 # Angular momentum (invariant direction)
 L = np.reshape(I, (3, 1)) * w
 # Spherical coords for L
-theta = np.arccos(L[2] / np.sum(L ** 2, axis=0))
+theta = np.arccos(L[2] / np.linalg.norm(L, axis=0))
 phi = np.arctan2(L[1], L[0])
 # Rotation matrices, L -> z axis
 cost = np.cos(theta)
@@ -86,12 +93,13 @@ sint = np.sin(theta)
 cosp = np.cos(phi)
 sinp = np.sin(phi)
 R = np.array([
-    [cosp * cost, sinp, -cosp * sint],
-    [-sinp * cost, cosp, sinp * cost],
+    [cost, np.zeros(len(t)), - sint],
+    [np.zeros(len(t)), cosp, np.zeros(len(t))],
     [sint, np.zeros(len(t)), cost]
 ])
 # Inertial frame coordinates for w
-w_inertial = np.einsum('ijk,jk->jk', R, w)
+w_inertial = np.einsum('ijk,jk->ik', R, w)
+L_inertial = np.einsum('ijk,jk->ik', R, L)
 
 fig = plt.figure(figsize=(10, 10))
 ax1 = fig.add_subplot(2, 2, 1, projection='3d')
@@ -106,21 +114,24 @@ ax1.set_xlim([-lim1, lim1])
 ax1.set_ylim([-lim1, lim1])
 ax1.set_zlim([-lim1, lim1])
 ax3.set_title('Inertial frame', fontdict={'size': 15})
-lim3 = np.max(np.abs(w_inertial))
+lim3 = np.max([np.max(np.abs(w_inertial)), np.linalg.norm(L[:, 0])])
 ax3.set_xlim([-lim3, lim3])
 ax3.set_ylim([-lim3, lim3])
 ax3.set_zlim([-lim3, lim3])
 # Style axes
 val1 = [lim1 * 1.5, 0, 0]
 val3 = [lim3 * 1.5, 0, 0]
-labels = ['X', 'Y', 'Z']
+labels1 = ["$X_1$", "$X_2$", "$X_3$"]
+labels3 = ["$X_1'$", "$X_2'$", "$X_3'$"]
 for i in range(3):
     xyz = [-val1[i-0], -val1[i-1], -val1[i-2]]
     uvw = [2 * val1[i-0], 2 * val1[i-1], 2 * val1[i-2]]
     ax1.quiver(*xyz, *uvw, color='k', arrow_length_ratio=.05)
-    ax1.text(val1[i-0], val1[i-1], val1[i-2], labels[i], fontsize=15)
+    ax1.text(val1[i-0], val1[i-1], val1[i-2], labels1[i], fontsize=15)
+    xyz = [-val3[i-0], -val3[i-1], -val3[i-2]]
+    uvw = [2 * val3[i-0], 2 * val3[i-1], 2 * val3[i-2]]
     ax3.quiver(*xyz, *uvw, color='k', arrow_length_ratio=.05)
-    ax3.text(val3[i-0], val3[i-1], val3[i-2], labels[i], fontsize=15)
+    ax3.text(val3[i-0], val3[i-1], val3[i-2], labels3[i], fontsize=15)
 # Hide everything default
 ax1.xaxis.set_pane_color((1, 1, 1, 0))
 ax1.yaxis.set_pane_color((1, 1, 1, 0))
@@ -146,15 +157,16 @@ ax4.set_xlim([0, t[-1]])
 ax4.set_ylim([minw_i - .1 * np.abs(minw_i), maxw_i + .1 * np.abs(maxw_i)])
 
 # Animation
-angular_velocity, = ax1.plot([], [], [], color='b', lw=2.5, alpha=.6)
-angular_momentum, = ax1.plot([], [], [], color='r', lw=2.5, alpha=.6)
-ln_w, = ax1.plot([], [], [], color='b', lw=1.2, label=r'$\vec{\omega}$')
-ln_L, = ax1.plot([], [], [], color='r', lw=1.2, label=r'$\vec{L}$')
+angular_velocity, = ax1.plot([], [], [], color='b', lw=2.5, alpha=.6, label=r'$\vec{\omega}$')
+angular_momentum, = ax1.plot([], [], [], color='r', lw=2.5, alpha=.6, label=r'$\vec{L}$')
+ln_w, = ax1.plot([], [], [], color='b', lw=1.2)
+ln_L, = ax1.plot([], [], [], color='r', lw=1.2)
 omega1, = ax2.plot([], [], label=r'$\omega_1$')
 omega2, = ax2.plot([], [], label=r'$\omega_2$')
 omega3, = ax2.plot([], [], label=r'$\omega_3$')
-angular_velocity_i, = ax3.plot([], [], [], color='b', lw=2.5, alpha=.6)
-ln_w_i, = ax3.plot([], [], [], color='b', lw=1.2, label=r'$\vec{\omega}$')
+angular_velocity_i, = ax3.plot([], [], [], color='b', lw=2.5, alpha=.6, label=r'$\vec{\omega}$')
+angular_momentum_i, = ax3.plot([0, 0], [0, 0], [0, np.linalg.norm(L[:, 0])], color='r', lw=2.5, alpha=.6, label=r'$\vec{L}$')
+ln_w_i, = ax3.plot([], [], [], color='b', lw=1.2)
 omega1_i, = ax4.plot([], [], label=r'$\omega_1$')
 omega2_i, = ax4.plot([], [], label=r'$\omega_2$')
 omega3_i, = ax4.plot([], [], label=r'$\omega_3$')
