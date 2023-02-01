@@ -113,7 +113,7 @@ def solve(I, w0, w, A0, t):
             [np.zeros(len(t)), np.zeros(len(t)), np.ones(len(t))]
         ]) # 3x3xn
         # Precession
-        Op = np.array([I[i] * w0[i] for i in range(3)]) / I[i]
+        Op = np.array([I[i] * w0[i], I[j] * w0[j], I[k] * w0[k]]) / I[i]
         Op0x = np.array([
             [0, Op[k], - Op[j]],
             [- Op[k], 0, Op[i]],

@@ -64,7 +64,7 @@ lim1 = np.max(np.abs(w_body))
 ax1.set_xlim([-lim1, lim1])
 ax1.set_ylim([-lim1, lim1])
 ax1.set_zlim([-lim1, lim1])
-ax3.set_title('Inertial frame', fontdict={'size': 15})
+ax3.set_title('Lab frame', fontdict={'size': 15})
 lim3 = np.max(np.abs(w_lab))
 ax3.set_xlim([-lim3, lim3])
 ax3.set_ylim([-lim3, lim3])
@@ -108,12 +108,16 @@ ax4.set_xlim([0, t[-1]])
 ax4.set_ylim([minw_lab - .1 * np.abs(minw_lab), maxw_lab + .1 * np.abs(maxw_lab)])
 
 # Animation
+axis_len = .7 * np.linalg.norm(w0_lab)
 angular_velocity_b, = ax1.plot([], [], [], color='b', lw=2.5, alpha=.6, label=r'$\vec{\omega}$')
 ln_w_b, = ax1.plot([], [], [], color='b', lw=1.2)
 omega1_b, = ax2.plot([], [], label=r'$\omega_1$')
 omega2_b, = ax2.plot([], [], label=r'$\omega_2$')
 omega3_b, = ax2.plot([], [], label=r'$\omega_3$')
 angular_velocity_l, = ax3.plot([], [], [], color='b', lw=2.5, alpha=.6, label=r'$\vec{\omega}$')
+e1, = ax3.plot([], [], [], lw=2.5, alpha=.6, label=r'$\vec{e}_1$')
+e2, = ax3.plot([], [], [], lw=2.5, alpha=.6, label=r'$\vec{e}_2$')
+e3, = ax3.plot([], [], [], lw=2.5, alpha=.6, label=r'$\vec{e}_3$') 
 ln_w_l, = ax3.plot([], [], [], color='b', lw=1.2)
 omega1_l, = ax4.plot([], [], label=r'$\omega_1$')
 omega2_l, = ax4.plot([], [], label=r'$\omega_2$')
@@ -129,6 +133,9 @@ def func(i):
     omega2_b.set_data(t[:i], w_body[1, :i])
     omega3_b.set_data(t[:i], w_body[2, :i])
     angular_velocity_l.set_data_3d(*zip(np.zeros(3), w_lab[:, i]))
+    e1.set_data_3d(*zip(np.zeros(3), axis_len * A[0, :, i]))
+    e2.set_data_3d(*zip(np.zeros(3), axis_len * A[1, :, i]))
+    e3.set_data_3d(*zip(np.zeros(3), axis_len * A[2, :, i]))
     ln_w_l.set_data_3d(w_lab[:, :i])
     omega1_l.set_data(t[:i], w_lab[0, :i])
     omega2_l.set_data(t[:i], w_lab[1, :i])
@@ -140,6 +147,9 @@ def func(i):
         omega2_b, \
         omega3_b, \
         angular_velocity_l, \
+        e1, \
+        e2, \
+        e3, \
         ln_w_l, \
         omega1_l, \
         omega2_l, \
