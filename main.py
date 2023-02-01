@@ -1,12 +1,11 @@
 import numpy as np
-import scipy.special as sp
+import angular_v
+import attitude
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
 # Time step
-dt = .02
-
-default_duration = 3
+DT = .02 
 
 def request_float(prompt: str, positive: bool) -> float:
     # Gets user input
@@ -22,87 +21,36 @@ def request_float(prompt: str, positive: bool) -> float:
             print(f'Input must be a float.') 
 
 print(
-    'We have taken a body frame of principal axes of inertia, '
-    'centered at a point fixed in the body frame and an external inertial frame.'
+    'We shall employ two reference frames: \n'
+    '1. A body frame of principal axes of inertia, '
+    'centered at a point fixed in the body frame and an external inertial frame. \n'
+    '2. The inertial lab frame.'
     )
 
 # Moment of inertia tensor in body frame
-print('Input the inertia tensor in the body frame.')
+print('Input the (diagonal) inertia tensor in the BODY FRAME.')
 I = []
 for i in range(1, 4):
     I.append(request_float(f'Moment of inertia I{i} (kg m^2): ', True))
 
 # Initial angular velocity
-print('Input the initial angular velocity in the body frame.')
-w0 = []
+print('Input the initial angular velocity in the LAB FRAME.')
+w0_lab = []
 for i in range(1, 4):
-    w0.append(request_float(f'w{i} (rad/s): ', False))
+    w0_lab.append(request_float(f'w{i} (rad/s): ', False))
 
-if (w0.count(0) == 2) or all(i == I[0] for i in I): # w along principal axis or spherical symmetry
-    t = np.arange(0, default_duration, dt)
-    w0 = np.reshape(w0, (3, 1))
-    w = np.tile(w0, len(t))
-elif all(i != I[0] for i in I[1:]): # Assymetric I
-    # Correct ordering of basis
-    j = np.argsort(I)[len(I) // 2]
-    k = (j + 1) % 3
-    i = (j + 2) % 3
-    # Conserved quantities
-    l = np.sum([(I[i] * w0[i]) ** 2 for i in range(3)]) # L^2
-    e = np.sum([I[i] * w0[i] ** 2 for i in range(3)]) # 2T
-    # Change of variables
-    m = (I[i] - I[j]) * (l - I[k] * e) / ((I[j] - I[k]) * (I[i] * e - l))
-    K = 4 * sp.ellipk(m)
-    conversion = np.sqrt( (I[i] * e - l) * (I[j] - I[k]) / (np.prod(I)))
-    t = np.arange(0, K / conversion, dt)
-    tau = t * conversion
-    # Initial conditions
-    s0 = w0[j] * np.sqrt(I[j] * (I[j] - I[k]) / (l - e * I[k]))
-    tau += sp.ellipkinc(np.arcsin(s0), m)
-    # Solution
-    w = np.empty((3, len(t)))
-    sn, cn, dn, _ = sp.ellipj(tau, m)
-    w[i] = np.sqrt((l - I[k] * e) / (I[i] * (I[i] - I[k]))) * cn  
-    w[j] = np.sqrt((l - I[k] * e) / (I[j] * (I[j] - I[k]))) * sn  
-    w[k] = np.sqrt((I[i] * e - l) / (I[k] * (I[i] - I[k]))) * dn 
-else: # Axially symmetric I
-    # Correct ordering of basis
-    k = np.argmax(np.abs(I-np.median(I))) 
-    i = (k + 1) % 3
-    j = (k + 2) % 3
-    if w0[k] == 0: # w along axis perpendicular to symmetry axis
-        t = np.arange(0, default_duration, dt)
-        w0 = np.reshape(w0, (3, 1))
-        w = np.tile(w0, len(t))
-    else:
-        # Precession of w around symmetry axis (in body frame)
-        O = (I[k] - I[i]) / I[i] 
-        t = np.arange(0, 2 * np.pi / np.abs(O), dt)
-        w = np.empty((3, len(t)))
-        w[i] = np.cos(O * t) * w0[i] - np.sin(O * t) * w0[j]
-        w[j] = np.sin(O * t) * w0[i] + np.cos(O * t) * w0[j]
-        w[k] = w0[k] 
-# Angular momentum (invariant direction)
-L = np.reshape(I, (3, 1)) * w
-# Precession about L
-alpha = np.arctan2(np.linalg.norm(w[:2], axis=0), w[2])
-theta = np.arctan2(np.linalg.norm(L[:2], axis=0), L[2])
-a = np.linalg.norm(w, axis=0)
-Op = np.linalg.norm(w, axis=0) * np.sin(alpha) / np.sin(theta)
-# Position of w in the inertial frame
-elev = np.abs(theta - alpha)
-azim = np.cumsum(Op) * dt
-w_inertial = np.linalg.norm(w, axis=0) * np.array([
-    np.cos(azim) * np.sin(elev),
-    np.sin(azim) * np.sin(elev),
-    np.cos(elev)
-    ])
-# Position of e3 basis vector in inertial frame
-e3 = np.linalg.norm(w[:, 0]) * np.array([
-    np.cos(azim) * np.sin(theta),
-    np.sin(azim) * np.sin(theta),
-    np.cos(elev)
-    ])
+# Initial attitude matrix
+print('Input the initial orientation of the body in the LAB FRAME.')
+A0 = np.eye(3)
+w0_body = A0 @ w0_lab
+
+# Duration
+t = np.arange(0, request_float("Input the simulation's duration t (s): ", True), DT)
+
+w_body = angular_v.solve(I, w0_body, t)
+A = attitude.solve(I, w0_body, w_body, A0, t)
+w_lab = np.einsum('jik,jk->ik', A, w_body) # A.T @ w_body
+
 
 fig = plt.figure(figsize=(10, 10))
 ax1 = fig.add_subplot(2, 2, 1, projection='3d')
@@ -112,12 +60,12 @@ ax4 = fig.add_subplot(2, 2, 4)
 
 # Axes 1 and 3
 ax1.set_title('Body frame', fontdict={'size': 15})
-lim1 = np.max(np.abs([w, L]))
+lim1 = np.max(np.abs(w_body))
 ax1.set_xlim([-lim1, lim1])
 ax1.set_ylim([-lim1, lim1])
 ax1.set_zlim([-lim1, lim1])
 ax3.set_title('Inertial frame', fontdict={'size': 15})
-lim3 = np.max(np.abs(w_inertial))
+lim3 = np.max(np.abs(w_lab))
 ax3.set_xlim([-lim3, lim3])
 ax3.set_ylim([-lim3, lim3])
 ax3.set_zlim([-lim3, lim3])
@@ -148,67 +96,54 @@ ax3._axis3don = False
 # Axes 2 and 4
 ax2.set_xlabel('t (s)')
 ax2.set_ylabel('$\omega$ (rad/s)')
-minw = np.min(w)
-maxw = np.max(w)
+minw_body = np.min(w_body)
+maxw_body = np.max(w_body)
 ax2.set_xlim([0, t[-1]])
-ax2.set_ylim([minw - .1 * np.abs(minw), maxw + .1 * np.abs(maxw)])
+ax2.set_ylim([minw_body - .1 * np.abs(minw_body), maxw_body + .1 * np.abs(maxw_body)])
 ax4.set_xlabel('t (s)')
 ax4.set_ylabel('$\omega$ (rad/s)')
-minw_i = np.min(w_inertial)
-maxw_i = np.max(w_inertial)
+minw_lab = np.min(w_lab)
+maxw_lab = np.max(w_lab)
 ax4.set_xlim([0, t[-1]])
-ax4.set_ylim([minw_i - .1 * np.abs(minw_i), maxw_i + .1 * np.abs(maxw_i)])
+ax4.set_ylim([minw_lab - .1 * np.abs(minw_lab), maxw_lab + .1 * np.abs(maxw_lab)])
 
 # Animation
-angular_velocity, = ax1.plot([], [], [], color='b', lw=2.5, alpha=.6, label=r'$\vec{\omega}$')
-angular_momentum, = ax1.plot([], [], [], color='r', lw=2.5, alpha=.6, label=r'$\vec{L}$')
-ln_w, = ax1.plot([], [], [], color='b', lw=1.2)
-ln_L, = ax1.plot([], [], [], color='r', lw=1.2)
-omega1, = ax2.plot([], [], label=r'$\omega_1$')
-omega2, = ax2.plot([], [], label=r'$\omega_2$')
-omega3, = ax2.plot([], [], label=r'$\omega_3$')
-angular_velocity_i, = ax3.plot([], [], [], color='b', lw=2.5, alpha=.6, label=r'$\vec{\omega}$')
-angular_momentum_i, = ax3.plot([0, 0], [0, 0], [0, np.linalg.norm(L[:, 0])], color='r', lw=2.5, alpha=.6, label=r'$\vec{L}$')
-e3_vector, = ax3.plot([], [], [], color='g', lw=2.5, alpha=.6, label=r'$\vec{e}_3$')
-ln_w_i, = ax3.plot([], [], [], color='b', lw=1.2)
-ln_e3, = ax3.plot([], [], [], color='g', lw=1.2)
-omega1_i, = ax4.plot([], [], label=r'$\omega_1$')
-omega2_i, = ax4.plot([], [], label=r'$\omega_2$')
-omega3_i, = ax4.plot([], [], label=r'$\omega_3$')
+angular_velocity_b, = ax1.plot([], [], [], color='b', lw=2.5, alpha=.6, label=r'$\vec{\omega}$')
+ln_w_b, = ax1.plot([], [], [], color='b', lw=1.2)
+omega1_b, = ax2.plot([], [], label=r'$\omega_1$')
+omega2_b, = ax2.plot([], [], label=r'$\omega_2$')
+omega3_b, = ax2.plot([], [], label=r'$\omega_3$')
+angular_velocity_l, = ax3.plot([], [], [], color='b', lw=2.5, alpha=.6, label=r'$\vec{\omega}$')
+ln_w_l, = ax3.plot([], [], [], color='b', lw=1.2)
+omega1_l, = ax4.plot([], [], label=r'$\omega_1$')
+omega2_l, = ax4.plot([], [], label=r'$\omega_2$')
+omega3_l, = ax4.plot([], [], label=r'$\omega_3$')
 ax1.legend(loc='upper right')
 ax2.legend(loc='upper right')
 ax3.legend(loc='upper right')
 ax4.legend(loc='upper right')
 def func(i):
-    angular_velocity.set_data_3d(*zip(np.zeros(3), w[:, i]))
-    angular_momentum.set_data_3d(*zip(np.zeros(3), L[:, i]))
-    ln_w.set_data_3d(w[:, :i])
-    ln_L.set_data_3d(L[:, :i])
-    omega1.set_data(t[:i], w[0, :i])
-    omega2.set_data(t[:i], w[1, :i])
-    omega3.set_data(t[:i], w[2, :i])
-    angular_velocity_i.set_data_3d(*zip(np.zeros(3), w_inertial[:, i]))
-    e3_vector.set_data_3d(*zip(np.zeros(3), e3[:, i]))
-    ln_w_i.set_data_3d(w_inertial[:, :i])
-    ln_e3.set_data_3d(e3[:, :i])
-    omega1_i.set_data(t[:i], w_inertial[0, :i])
-    omega2_i.set_data(t[:i], w_inertial[1, :i])
-    omega3_i.set_data(t[:i], w_inertial[2, :i])
+    angular_velocity_b.set_data_3d(*zip(np.zeros(3), w_body[:, i]))
+    ln_w_b.set_data_3d(w_body[:, :i])
+    omega1_b.set_data(t[:i], w_body[0, :i])
+    omega2_b.set_data(t[:i], w_body[1, :i])
+    omega3_b.set_data(t[:i], w_body[2, :i])
+    angular_velocity_l.set_data_3d(*zip(np.zeros(3), w_lab[:, i]))
+    ln_w_l.set_data_3d(w_lab[:, :i])
+    omega1_l.set_data(t[:i], w_lab[0, :i])
+    omega2_l.set_data(t[:i], w_lab[1, :i])
+    omega3_l.set_data(t[:i], w_lab[2, :i])
     return \
-        angular_velocity, \
-        angular_momentum, \
-        ln_w, \
-        ln_L, \
-        omega1, \
-        omega2, \
-        omega3, \
-        angular_velocity_i, \
-        e3_vector, \
-        ln_w_i, \
-        ln_e3, \
-        omega1_i, \
-        omega2_i, \
-        omega3_i
+        angular_velocity_b, \
+        ln_w_b, \
+        omega1_b, \
+        omega2_b, \
+        omega3_b, \
+        angular_velocity_l, \
+        ln_w_l, \
+        omega1_l, \
+        omega2_l, \
+        omega3_l
 
 ani = FuncAnimation(fig, func, frames=len(t), interval=50, blit=True)
 ani.save('rb_rotation.gif', writer='pillow', fps=50, dpi=100)
