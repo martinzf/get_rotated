@@ -1,12 +1,17 @@
 # Get rotated
-Simple Python 3.11 code to study the inertial motion of spinning tops. WIP
+Python 3.11 code to study the inertial (force and torque free) motion of spinning tops. 
 
 ### How to use
+1. Clone the repository and open its folder from the CLI.
+1. Run the command `pip install -r requirements.txt` to install dependencies.
+1. Run the command `python main.py` (or `python3 main.py` if both Python 2 and Python 3 are installed on your computer).
+1. You will be prompted to input information regarding the simulation. Press enter after answering each prompt.
+1. Wait while the animation loads. The programme will open an interactive Matplotlib window and save `rb_rotation.gif` to the project folder.
 
-The rotational motion is periodic, so long simulations aren't necessary. Solving the equations of motion is quick, but loading the animations takes time. I would therefore recommend short simulation times, on the order of 5s.
+Warning: Solving the equations of motion is quick, but loading the animations takes time. I would therefore recommend short simulation times, on the order of 5-10s, if you just want to get acquainted with what the solutions look like.
 
 ### Preview
-![alt text]()
+![alt text](preview.gif)
 
 ### Theory
 The inertial rotation of rigid bodies is typically studied in a body frame of principal axes of inertia by solving Euler's equations:
@@ -17,7 +22,7 @@ with $(i,j,k)$ a cyclic permutation of $(1,2,3)$.
 
 Solutions to these equations for the case of spherically symmetric, axially symmetric and asymmetric bodies are readily available in many classical mechanics textbooks. What usually isn't discussed is the transformation from the body frame to the lab frame.
 
-The position $\vec{r}_i(t) $ of a point $i$ in the lab frame, in terms of the position of the center of mass in the lab frame $\vec{R}(t)$ and the position of that same point in the body frame $\tilde{\vec{r}}_i $, is:
+The position $\vec{r}_i(t)$ of a point $i$ in the lab frame, in terms of the position of the center of mass in the lab frame $\vec{R}(t)$ and the position of that same point in the body frame $\tilde{\vec{r}}_i $, is:
 
 $$\vec{r}_i(t)=\vec{R}(t)+A^\top(t)\tilde{\vec{r}}_i$$
 
@@ -39,10 +44,10 @@ $$\begin{align*}
     -W(\tilde{\vec{\omega}}) A &= \dot{A}
 \end{align*}$$
 
-This could easily be solved numerically, however it turns out that the problem has an analytic solution!! I've implemented the algorithm outlined in van Zon et al., 2007 in order to calculate the attitude matrix at any time $t$.
+This matrix ODE could easily be solved numerically, however it turns out that the problem has an analytic solution!! I've implemented the algorithm outlined in van Zon et al., 2007 in order to calculate the $A$ matrix at any time $t$.
 
 ### References
 [van Zon, Ramses & Schofield, Jeremy. (2007). Numerical implementation of the exact dynamics of free rigid bodies. Journal of Computational Physics. 225. 145-164. 10.1016/j.jcp.2006.11.019.](https://www.researchgate.net/publication/222535012_Numerical_implementation_of_the_exact_dynamics_of_free_rigid_bodies)
 
 ### Acknowledgements
-Many thanks to my Classical Mechanics teacher [Artemio López](http://jacobi.fis.ucm.es/artemio/UCM/English.html) for helping me understand the problem and showing me the article linked above.
+Many thanks to my Classical Mechanics teacher [Artemio González López](http://jacobi.fis.ucm.es/artemio/UCM/English.html) for helping me understand the problem and directing me to the article linked above.

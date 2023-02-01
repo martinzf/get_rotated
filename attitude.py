@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.special as sp
 import scipy.linalg as la
+import matplotlib.pyplot as plt
 
 # Machine precision
 EPS = np.finfo(float).eps
@@ -57,7 +58,6 @@ def solve(I, w0, w, A0, t):
         T2 = la.expm(Opx) # nx3x3
         return np.einsum('ijk,kjl,lm->imk', T1, T2, A0) # 3x3xn
     else: # Asymmetric
-        print(len(I), len(set(I)), set(I))
         # Conserved quantities
         l = np.sum([(I[i] * w0[i]) ** 2 for i in range(3)]) # L^2
         e = np.sum([I[i] * w0[i] ** 2 for i in range(3)]) # 2T
@@ -114,26 +114,27 @@ def solve(I, w0, w, A0, t):
                 break
         A1 = np.arctan2(i0, r0)
         # Evolution in time
-        Re_theta, Im_theta = 0, 0
+        Re_theta, Im_theta = np.zeros((2, len(t)))
         for n in range(NT):
             U = (2 * n + 1) * np.pi * (wp * t + epsilon) / (2 * K)
             Re_theta += cr[n] * np.sin(U)
             Im_theta += ci[n] * np.cos(U)
         C = np.cos(A1 + A2 * t)
         S = np.sin(A1 + A2 * t)
-        theta = np.linalg.norm([Re_theta, Im_theta])
+        theta = np.linalg.norm([Re_theta, Im_theta], axis=0)
         cos_psi = (C * Re_theta + S * Im_theta) / theta
         sin_psi = (S * Re_theta - C * Im_theta) / theta
+        z, o = np.zeros(len(t)), np.ones(len(t))
         w1, w2, w3 = w[i], w[j], w[k]
         Lperp = np.sqrt((I1 * w1) ** 2 + (I2 * w2) ** 2)
         T1 = np.array([
             [I1 * I3 * w1 * w3 / (L * Lperp), - I2 * w2 / Lperp, I1 * w1 / L],
             [I2 * I3 * w2 * w3 / (L * Lperp), I1 * w1 / Lperp, I2 * w2 / L],
-            [- Lperp / L, np.zeros(len(t)), I3 * w3 / L]
+            [- Lperp / L, z, I3 * w3 / L]
         ]) # 3x3xn
         T2 = np.array([
-            [cos_psi, sin_psi, np.zeros(len(t))],
-            [- sin_psi, cos_psi, np.zeros(len(t))],
-            [np.zeros(len(t)), np.zeros(len(t)), np.ones(len(t))]
+            [cos_psi, sin_psi, z],
+            [- sin_psi, cos_psi, z],
+            [z, z, o]
         ]) # 3x3xn
         return np.einsum('ijk,jlk,ln->ink', T1, T2, B)
