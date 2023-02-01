@@ -4,7 +4,7 @@ import scipy.linalg as la
 
 # Machine precision
 EPS = np.finfo(float).eps
-# Maximum iterations for A2
+# Maximum iterations for A2 coefficient
 MAXITER = 10_000
 
 def solve(I, w0, w, A0, t):

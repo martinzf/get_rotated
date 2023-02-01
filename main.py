@@ -40,8 +40,18 @@ for i in range(1, 4):
     w0_lab.append(request_float(f'w{i} (rad/s): ', False))
 
 # Initial attitude matrix
-print('Input the initial orientation of the body in the LAB FRAME.')
-A0 = np.eye(3)
+print('Input the initial orientation of the body in the LAB FRAME: Rz(yaw) Ry(pitch) Rx(roll). ')
+roll = request_float('Roll (rad): ', False)
+pitch = request_float('Pitch (rad): ', False)
+yaw = request_float('Yaw (rad): ', False)
+cx, sx = np.cos(roll), np.sin(roll)
+cy, sy = np.cos(pitch), np.sin(pitch)
+cz, sz = np.cos(yaw), np.sin(yaw)
+A0 = np.array([
+    [cz * cy, sz * cy, - sy],
+    [cz * sy * sx - sz * cx, sz * sy * sx + cz * cx, cy * sx],
+    [cz * sy * cx + sz * sx, sz * sy * cx - cz * sx, cy * cx]
+])
 w0_body = A0 @ w0_lab
 
 # Duration
