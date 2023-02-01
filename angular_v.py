@@ -2,10 +2,26 @@ import numpy as np
 import scipy.special as sp
 
 def solve(I, w0, t):
-    if (np.count_nonzero(w0 == 0) == 2) or all(i == I[0] for i in I): # w along principal axis or spherical symmetry
+    if (np.count_nonzero(w0 == 0) == 2) or (len(set(I)) == 1): # w along principal axis or spherical symmetry
         w0 = np.reshape(w0, (3, 1))
         return np.tile(w0, len(t))
-    elif all(i != I[0] for i in I[1:]): # Asymmetric
+    elif len(set(I)) == 2: # Axially symmetric
+        # Set 3rd axis as axis corresponding to different moment of inertia
+        k = np.argmax(np.abs(I - np.median(I)))
+        i = (k + 1) % 3
+        j = (k + 2) % 3
+        if w0[k] == 0: # w along axis perpendicular to symmetry axis
+            w0 = np.reshape(w0, (3, 1))
+            return np.tile(w0, len(t))
+        # Precession of w around symmetry axis
+        O = (I[k] / I[i] - 1) * w0[k]
+        c, s = np.cos(O * t), np.sin(O * t)
+        w = np.empty((3, len(t)))
+        w[i] = c * w0[i] - s * w0[j]
+        w[j] = s * w0[i] + c * w0[j]
+        w[k] = w0[k] * np.ones(len(t))
+        return w
+    else: # Asymmetric
         # Conserved quantities
         l = np.sum([(I[i] * w0[i]) ** 2 for i in range(3)]) # L^2
         e = np.sum([I[i] * w0[i] ** 2 for i in range(3)]) # 2T
@@ -40,20 +56,4 @@ def solve(I, w0, t):
             w[i], w[j], w[k] = w1, w2, w3
         else:
             w[i], w[j], w[k] = w3, - w2, w1
-        return w
-    else: # Axially symmetric
-        # Set 3rd axis as axis corresponding to different moment of inertia
-        k = np.argmax(np.abs(I - np.median(I)))
-        i = (k + 1) % 3
-        j = (k + 2) % 3
-        if w0[k] == 0: # w along axis perpendicular to symmetry axis
-            w0 = np.reshape(w0, (3, 1))
-            return np.tile(w0, len(t))
-        # Precession of w around symmetry axis
-        O = (I[k] / I[i] - 1) * w0[k]
-        c, s = np.cos(O * t), np.sin(O * t)
-        w = np.empty((3, len(t)))
-        w[i] = c * w0[i] - s * w0[j]
-        w[j] = s * w0[i] + c * w0[j]
-        w[k] = w0[k] * np.ones(len(t))
         return w

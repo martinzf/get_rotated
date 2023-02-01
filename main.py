@@ -97,7 +97,9 @@ ax3._axis3don = False
 ax2.set_xlabel('t (s)')
 ax2.set_ylabel('$\omega$ (rad/s)')
 minw_body = np.min(w_body)
+minw_body = minw_body if minw_body != 0 else -.1
 maxw_body = np.max(w_body)
+maxw_body = maxw_body if maxw_body != 0 else .1
 ax2.set_xlim([0, t[-1]])
 ax2.set_ylim([minw_body - .1 * np.abs(minw_body), maxw_body + .1 * np.abs(maxw_body)])
 ax4.set_xlabel('t (s)')

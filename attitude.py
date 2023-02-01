@@ -8,7 +8,7 @@ EPS = np.finfo(float).eps
 MAXITER = 10_000
 
 def solve(I, w0, w, A0, t):
-    if all(i == I[0] for i in I): # Spherically symmetric
+    if len(set(I)) == 1: # Spherically symmetric
         # Rotation
         w0_lab = A0.T @ w0 
         W0 = np.array([
@@ -19,7 +19,45 @@ def solve(I, w0, w, A0, t):
         W = np.einsum('k,ij->kij', t, W0)
         P = la.expm(W) # nx3x3
         return np.einsum('ijk,kl->jli', P, A0) # 3x3xn
-    elif all(i != I[0] for i in I[1:]): # Asymmetric
+    elif len(set(I)) == 2: # Axially symmetric
+        # Set 3rd axis as axis corresponding to different moment of inertia
+        k = np.argmax(np.abs(I - np.median(I)))
+        i = (k + 1) % 3
+        j = (k + 2) % 3
+        # Rotation
+        O = (I[k] / I[i] - 1) * w0[k]
+        c, s = np.cos(O * t), np.sin(O * t)
+        z, o = np.zeros(len(t)), np.ones(len(t))
+        if k == 2:
+            T1 = np.array([
+                [c, - s, z],
+                [s, c, z],
+                [z, z, o]
+            ]) # 3x3xn
+        elif k == 1:
+            T1 = np.array([
+                [c, z, s],
+                [z, o, z],
+                [- s, z, c]
+            ])
+        else:
+            T1 = np.array([
+                [o, z, z],
+                [z, c, - s],
+                [z, s, c]
+            ]) 
+        # Precession
+        Op = np.array([I[i] * w0[i] for i in range(3)]) / I[i]
+        Op0x = np.array([
+            [0, Op[2], - Op[1]],
+            [- Op[2], 0, Op[0]],
+            [Op[1], - Op[0], 0]
+        ])
+        Opx = np.einsum('k,ij->kij', t, Op0x)
+        T2 = la.expm(Opx) # nx3x3
+        return np.einsum('ijk,kjl,lm->imk', T1, T2, A0) # 3x3xn
+    else: # Asymmetric
+        print(len(I), len(set(I)), set(I))
         # Conserved quantities
         l = np.sum([(I[i] * w0[i]) ** 2 for i in range(3)]) # L^2
         e = np.sum([I[i] * w0[i] ** 2 for i in range(3)]) # 2T
@@ -99,26 +137,3 @@ def solve(I, w0, w, A0, t):
             [np.zeros(len(t)), np.zeros(len(t)), np.ones(len(t))]
         ]) # 3x3xn
         return np.einsum('ijk,jlk,ln->ink', T1, T2, B)
-    else: # Axially symmetric
-        # Set 3rd axis as axis corresponding to different moment of inertia
-        k = np.argmax(np.abs(I - np.median(I)))
-        i = (k + 1) % 3
-        j = (k + 2) % 3
-        # Rotation
-        O = (I[k] / I[i] - 1) * w0[k]
-        c, s = np.cos(O * t), np.sin(O * t)
-        T1 = np.array([
-            [c, - s, np.zeros(len(t))],
-            [s, c, np.zeros(len(t))],
-            [np.zeros(len(t)), np.zeros(len(t)), np.ones(len(t))]
-        ]) # 3x3xn
-        # Precession
-        Op = np.array([I[i] * w0[i], I[j] * w0[j], I[k] * w0[k]]) / I[i]
-        Op0x = np.array([
-            [0, Op[k], - Op[j]],
-            [- Op[k], 0, Op[i]],
-            [Op[j], - Op[i], 0]
-        ])
-        Opx = np.einsum('k,ij->kij', t, Op0x)
-        T2 = la.expm(Opx) # nx3x3
-        return np.einsum('ijk,kjl,lm->imk', T1, T2, A0) # 3x3xn
