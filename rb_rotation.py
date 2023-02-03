@@ -105,18 +105,13 @@ def solve(I, w0, A0, t):
             w[i], w[j], w[k] = w3, - w2, w1
         # Check ordering
         Lperp0 = np.sqrt((I1 * w10) ** 2 + (I2 * w20) ** 2)
+        e10 = np.array([I1 * I3 * w10 * w30 / (L * Lperp0), - I2 * w20 / Lperp0, I1 * w10 / L])
+        e20 = np.array([I2 * I3 * w20 * w30 / (L * Lperp0), I1 * w10 / Lperp0, I2 * w20 / L])
+        e30 = np.array([- Lperp0 / L, 0, I3 * w30 / L])
         if JacobiOrder:
-            T1t0 = np.array([
-                [I1 * I3 * w10 * w30 / (L * Lperp0), I2 * I3 * w20 * w30 / (L * Lperp0), - Lperp0 / L],
-                [- I2 * w20 / Lperp0, I1 * w10 / Lperp0, 0],
-                [I1 * w10 / L, I2 * w20 / L, I3 * w30 / L]
-            ])
+            T1t0 = np.array([e10, e20, e30]).T
         else:
-            T1t0 = np.array([
-                [- Lperp0 / L, - I2 * I3 * w20 * w30 / (L * Lperp0), I1 * I3 * w10 * w30 / (L * Lperp0)],
-                [0, - I1 * w10 / Lperp0, - I2 * w20 / Lperp0],
-                [I3 * w30 / L, - I2 * w20 / L, I1 * w10 / L]
-            ])
+            T1t0 = np.array([e30, - e20, e30]).T
         # More useful quantities
         B = T1t0 @ A0
         K = sp.ellipk(m)
@@ -160,23 +155,31 @@ def solve(I, w0, A0, t):
         cos_psi = (C * Re_theta + S * Im_theta) / theta
         sin_psi = (S * Re_theta - C * Im_theta) / theta
         Lperp = np.sqrt((I1 * w1) ** 2 + (I2 * w2) ** 2)
-        z, o = np.zeros(len(t)), np.ones(len(t))
+        e1 = np.array([I1 * I3 * w1 * w3 / (L * Lperp), - I2 * w2 / Lperp, I1 * w1 / L])
+        e2 = np.array([I2 * I3 * w2 * w3 / (L * Lperp), I1 * w1 / Lperp, I2 * w2 / L])
+        e3 = np.array([- Lperp / L, np.zeros(len(t)), I3 * w3 / L])
         if JacobiOrder:
-            T1 = np.array([
-                [I1 * I3 * w1 * w3 / (L * Lperp), - I2 * w2 / Lperp, I1 * w1 / L],
-                [I2 * I3 * w2 * w3 / (L * Lperp), I1 * w1 / Lperp, I2 * w2 / L],
-                [- Lperp / L, z, I3 * w3 / L]
-            ]) # 3x3xn
+            T1 = np.array([e1, e2, e3]) # 3x3xn
         else:
-            T1 = np.array([
-                [- Lperp / L, z, I3 * w3 / L],
-                [- I2 * I3 * w2 * w3 / (L * Lperp), - I1 * w1 / Lperp, - I2 * w2 / L],
-                [I1 * I3 * w1 * w3 / (L * Lperp), - I2 * w2 / Lperp, I1 * w1 / L]
+            T1 = np.array([e3, - e2, e1]) # 3x3xn
+        z, o = np.zeros(len(t)), np.ones(len(t))
+        if j == 1: 
+            T2 = np.array([
+                [cos_psi, sin_psi, z],
+                [- sin_psi, cos_psi, z],
+                [z, z, o]
             ]) # 3x3xn
-        T2 = np.array([
-            [cos_psi, sin_psi, z],
-            [- sin_psi, cos_psi, z],
-            [z, z, o]
-        ]) # 3x3xn
+        if j == 0:
+            T2 = np.array([
+                [cos_psi, z, - sin_psi],
+                [z, o, z],
+                [sin_psi, z, cos_psi]
+            ])
+        else:
+            T2 = np.array([
+                [o, z, z],
+                [z, cos_psi, sin_psi],
+                [z, - sin_psi, cos_psi]
+            ])
         A = np.einsum('ijk,jlk,ln->ink', T1, T2, B)
         return w, A

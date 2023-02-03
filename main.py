@@ -38,7 +38,7 @@ w0_lab = []
 for i in range(1, 4):
     w0_lab.append(request_float(f'w{i} (rad/s): ', False))
 
-# Initial attitude matrix
+# Initial transposed (inverse) attitude matrix
 print('Input the initial orientation of the body in the LAB FRAME: Rz(yaw) Ry(pitch) Rx(roll). ')
 roll = request_float('Roll (rad): ', False)
 pitch = request_float('Pitch (rad): ', False)
