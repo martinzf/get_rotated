@@ -1,6 +1,5 @@
 import numpy as np
-import angular_v
-import attitude
+import rb_rotation
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
@@ -57,11 +56,11 @@ w0_body = A0 @ w0_lab
 # Duration
 t = np.arange(0, request_float("Input the simulation's duration t (s): ", True), DT)
 
-w_body = angular_v.solve(I, w0_body, t)
-A = attitude.solve(I, w0_body, w_body, A0, t)
+# Solution
+w_body, A = rb_rotation.solve(I, w0_body, A0, t)
 w_lab = np.einsum('jik,jk->ik', A, w_body) # A.T @ w_body
 
-
+# Plotting & animating
 fig = plt.figure(figsize=(10, 10))
 ax1 = fig.add_subplot(2, 2, 1, projection='3d')
 ax2 = fig.add_subplot(2, 2, 2)
@@ -115,7 +114,9 @@ ax2.set_ylim([minw_body - .1 * np.abs(minw_body), maxw_body + .1 * np.abs(maxw_b
 ax4.set_xlabel('t (s)')
 ax4.set_ylabel('$\omega$ (rad/s)')
 minw_lab = np.min(w_lab)
+minw_lab = minw_lab if minw_lab != 0 else -.1
 maxw_lab = np.max(w_lab)
+maxw_lab = maxw_lab if maxw_lab != 0 else .1
 ax4.set_xlim([0, t[-1]])
 ax4.set_ylim([minw_lab - .1 * np.abs(minw_lab), maxw_lab + .1 * np.abs(maxw_lab)])
 
