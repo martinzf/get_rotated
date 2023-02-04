@@ -1,5 +1,7 @@
 # Get rotated
-Python 3.11 code to study the inertial (force and torque free) motion of spinning tops. 
+
+### About
+Python 3.11 code to study the inertial (force and torque free) motion of spinning tops.
 
 ### How to use
 1. Clone the repository and open its folder from the CLI.
@@ -8,7 +10,7 @@ Python 3.11 code to study the inertial (force and torque free) motion of spinnin
 1. You will be prompted to input information regarding the simulation. Press enter after answering each prompt.
 1. Wait while the animation loads. The programme will open an interactive Matplotlib window and save `rb_rotation.gif` to the project folder.
 
-Warning: Solving the equations of motion is quick, but loading the animations takes time. I would therefore recommend short simulation times, on the order of 5-10s, if you just want to get acquainted with what the solutions look like.
+Warning: Solving the equations of motion is quick, but loading the animations takes time. I would therefore recommend short simulation times, on the order of 5-10s, if you just want to get acquainted with what the solutions look like. Take a look at the examples folder for some premade gifs too.
 
 ### Preview
 ![alt text](preview.gif)

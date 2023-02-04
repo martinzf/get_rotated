@@ -106,17 +106,17 @@ ax3._axis3don = False
 ax2.set_xlabel('t (s)')
 ax2.set_ylabel('$\omega$ (rad/s)')
 minw_body = np.min(w_body)
-minw_body = minw_body if minw_body != 0 else -.1
+minw_body = minw_body if np.abs(minw_body) > .1 else -.1
 maxw_body = np.max(w_body)
-maxw_body = maxw_body if maxw_body != 0 else .1
+maxw_body = maxw_body if np.abs(maxw_body) > .1 else .1
 ax2.set_xlim([0, t[-1]])
 ax2.set_ylim([minw_body - .1 * np.abs(minw_body), maxw_body + .1 * np.abs(maxw_body)])
 ax4.set_xlabel('t (s)')
 ax4.set_ylabel('$\omega$ (rad/s)')
 minw_lab = np.min(w_lab)
-minw_lab = minw_lab if minw_lab != 0 else -.1
+minw_lab = minw_lab if np.abs(minw_lab) > .1 else -.1
 maxw_lab = np.max(w_lab)
-maxw_lab = maxw_lab if maxw_lab != 0 else .1
+maxw_lab = maxw_lab if np.abs(maxw_lab) > .1 else .1
 ax4.set_xlim([0, t[-1]])
 ax4.set_ylim([minw_lab - .1 * np.abs(minw_lab), maxw_lab + .1 * np.abs(maxw_lab)])
 
