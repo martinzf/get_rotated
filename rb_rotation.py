@@ -128,7 +128,7 @@ def solve(I, w0, A0, t):
                 [1, 0, 0]
             ])
         # More useful quantities
-        B = T1t0 @ U @ A0
+        B = T1t0 @ U @ A0 @ U
         K = sp.ellipk(m)
         Kp = sp.ellipk(1 - m)
         q = np.exp(- np.pi * Kp / K)
