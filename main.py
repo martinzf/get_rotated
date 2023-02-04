@@ -19,126 +19,133 @@ def request_float(prompt: str, positive: bool) -> float:
         except ValueError:
             print(f'Input must be a float.') 
 
-print(
-    'We shall employ two reference frames: \n'
-    '1. A body frame of principal axes of inertia, '
-    'centered at a point fixed in the body frame and an external inertial frame. \n'
-    '2. The inertial lab frame.'
-    )
-
-# Moment of inertia tensor in body frame
-print('Input the (diagonal) inertia tensor in the BODY FRAME.')
-I = []
-for i in range(1, 4):
-    I.append(request_float(f'Moment of inertia I{i} (kg m^2): ', True))
-
-# Initial angular velocity
-print('Input the initial angular velocity in the LAB FRAME.')
-w0_lab = []
-for i in range(1, 4):
-    w0_lab.append(request_float(f'w{i} (rad/s): ', False))
-
-# Initial transposed (inverse) attitude matrix
-print('Input the initial orientation of the body in the LAB FRAME: Rz(yaw) Ry(pitch) Rx(roll). ')
-roll = request_float('Roll (rad): ', False)
-pitch = request_float('Pitch (rad): ', False)
-yaw = request_float('Yaw (rad): ', False)
-cx, sx = np.cos(roll), np.sin(roll)
-cy, sy = np.cos(pitch), np.sin(pitch)
-cz, sz = np.cos(yaw), np.sin(yaw)
-A0 = np.array([
-    [cz * cy, sz * cy, - sy],
-    [cz * sy * sx - sz * cx, sz * sy * sx + cz * cx, cy * sx],
-    [cz * sy * cx + sz * sx, sz * sy * cx - cz * sx, cy * cx]
-])
-w0_body = A0 @ w0_lab
-
-# Duration
-t = np.arange(0, request_float("Input the simulation's duration t (s): ", True), DT)
-
-# Solution
-w_body, A = rb_rotation.solve(I, w0_body, A0, t)
-w_lab = np.einsum('jik,jk->ik', A, w_body) # A.T @ w_body
+def get_data():
+    print(
+        'We shall employ two reference frames: \n'
+        '1. A body frame of principal axes of inertia, '
+        'centered at a point fixed in the body frame and an external inertial frame. \n'
+        '2. The inertial lab frame.'
+        )
+    # Moment of inertia tensor in body frame
+    print('Input the (diagonal) inertia tensor in the BODY FRAME.')
+    I = []
+    for i in range(1, 4):
+        I.append(request_float(f'Moment of inertia I{i} (kg m^2): ', True))
+    # Initial angular velocity
+    print('Input the initial angular velocity in the LAB FRAME.')
+    w0_lab = []
+    for i in range(1, 4):
+        w0_lab.append(request_float(f'w{i} (rad/s): ', False))
+    # Initial transposed (inverse) attitude matrix
+    print('Input the initial orientation of the body in the LAB FRAME: Rz(yaw) Ry(pitch) Rx(roll). ')
+    roll = request_float('Roll (rad): ', False)
+    pitch = request_float('Pitch (rad): ', False)
+    yaw = request_float('Yaw (rad): ', False)
+    cx, sx = np.cos(roll), np.sin(roll)
+    cy, sy = np.cos(pitch), np.sin(pitch)
+    cz, sz = np.cos(yaw), np.sin(yaw)
+    A0 = np.array([
+        [cz * cy, sz * cy, - sy],
+        [cz * sy * sx - sz * cx, sz * sy * sx + cz * cx, cy * sx],
+        [cz * sy * cx + sz * sx, sz * sy * cx - cz * sx, cy * cx]
+    ])
+    w0_body = A0 @ w0_lab
+    # Duration
+    t = np.arange(0, request_float("Input the simulation's duration t (s): ", True), DT)
+    return I, w0_body, A0, t
 
 # Plotting & animating
-fig = plt.figure(figsize=(10, 10))
-ax1 = fig.add_subplot(2, 2, 1, projection='3d')
-ax2 = fig.add_subplot(2, 2, 2)
-ax3 = fig.add_subplot(2, 2, 3, projection='3d')
-ax4 = fig.add_subplot(2, 2, 4)
+def init_figure(t, w_body, w_lab):
+    fig = plt.figure(figsize=(10, 10))
+    ax1 = fig.add_subplot(2, 2, 1, projection='3d')
+    ax2 = fig.add_subplot(2, 2, 2)
+    ax3 = fig.add_subplot(2, 2, 3, projection='3d')
+    ax4 = fig.add_subplot(2, 2, 4)
+    # Axes 1 and 3
+    ax1.set_title('Body frame', fontdict={'size': 15})
+    lim1 = np.max(np.abs(w_body))
+    ax1.set_xlim([-lim1, lim1])
+    ax1.set_ylim([-lim1, lim1])
+    ax1.set_zlim([-lim1, lim1])
+    ax3.set_title('Lab frame', fontdict={'size': 15})
+    lim3 = np.max(np.abs(w_lab))
+    ax3.set_xlim([-lim3, lim3])
+    ax3.set_ylim([-lim3, lim3])
+    ax3.set_zlim([-lim3, lim3])
+    # Style axes
+    val1 = [lim1 * 1.5, 0, 0]
+    val3 = [lim3 * 1.5, 0, 0]
+    labels1 = ["$X_1$", "$X_2$", "$X_3$"]
+    labels3 = ["$X_1'$", "$X_2'$", "$X_3'$"]
+    for i in range(3):
+        xyz = [-val1[i-0], -val1[i-1], -val1[i-2]]
+        uvw = [2 * val1[i-0], 2 * val1[i-1], 2 * val1[i-2]]
+        ax1.quiver(*xyz, *uvw, color='k', arrow_length_ratio=.05)
+        ax1.text(val1[i-0], val1[i-1], val1[i-2], labels1[i], fontsize=15)
+        xyz = [-val3[i-0], -val3[i-1], -val3[i-2]]
+        uvw = [2 * val3[i-0], 2 * val3[i-1], 2 * val3[i-2]]
+        ax3.quiver(*xyz, *uvw, color='k', arrow_length_ratio=.05)
+        ax3.text(val3[i-0], val3[i-1], val3[i-2], labels3[i], fontsize=15)
+    # Hide everything default
+    ax1.xaxis.set_pane_color((1, 1, 1, 0))
+    ax1.yaxis.set_pane_color((1, 1, 1, 0))
+    ax1.zaxis.set_pane_color((1, 1, 1, 0))
+    ax1._axis3don = False
+    ax3.xaxis.set_pane_color((1, 1, 1, 0))
+    ax3.yaxis.set_pane_color((1, 1, 1, 0))
+    ax3.zaxis.set_pane_color((1, 1, 1, 0))
+    ax3._axis3don = False
+    # Axes 2 and 4
+    ax2.set_xlabel('t (s)')
+    ax2.set_ylabel('$\omega$ (rad/s)')
+    minw_body = np.min(w_body)
+    minw_body = minw_body if np.abs(minw_body) > .1 else -.1
+    maxw_body = np.max(w_body)
+    maxw_body = maxw_body if np.abs(maxw_body) > .1 else .1
+    ax2.set_xlim([0, t[-1]])
+    ax2.set_ylim([minw_body - .1 * np.abs(minw_body), maxw_body + .1 * np.abs(maxw_body)])
+    ax4.set_xlabel('t (s)')
+    ax4.set_ylabel('$\omega$ (rad/s)')
+    minw_lab = np.min(w_lab)
+    minw_lab = minw_lab if np.abs(minw_lab) > .1 else -.1
+    maxw_lab = np.max(w_lab)
+    maxw_lab = maxw_lab if np.abs(maxw_lab) > .1 else .1
+    ax4.set_xlim([0, t[-1]])
+    ax4.set_ylim([minw_lab - .1 * np.abs(minw_lab), maxw_lab + .1 * np.abs(maxw_lab)])
+    # Artists
+    axis_len = .7 * np.linalg.norm(w_body[:, 0])
+    angular_velocity_b, = ax1.plot([], [], [], color='b', lw=2.5, alpha=.6, label=r'$\vec{\omega}$')
+    ln_w_b, = ax1.plot([], [], [], color='b', lw=1.2)
+    omega1_b, = ax2.plot([], [], label=r'$\omega_1$')
+    omega2_b, = ax2.plot([], [], label=r'$\omega_2$')
+    omega3_b, = ax2.plot([], [], label=r'$\omega_3$')
+    angular_velocity_l, = ax3.plot([], [], [], color='b', lw=2.5, alpha=.6, label=r'$\vec{\omega}$')
+    e1, = ax3.plot([], [], [], lw=2.5, alpha=.6, label=r'$\vec{e}_1$')
+    e2, = ax3.plot([], [], [], lw=2.5, alpha=.6, label=r'$\vec{e}_2$')
+    e3, = ax3.plot([], [], [], lw=2.5, alpha=.6, label=r'$\vec{e}_3$') 
+    ln_w_l, = ax3.plot([], [], [], color='b', lw=1.2)
+    omega1_l, = ax4.plot([], [], label=r'$\omega_1$')
+    omega2_l, = ax4.plot([], [], label=r'$\omega_2$')
+    omega3_l, = ax4.plot([], [], label=r'$\omega_3$')
+    ax1.legend(loc='upper right')
+    ax2.legend(loc='upper right')
+    ax3.legend(loc='upper right')
+    ax4.legend(loc='upper right')
+    return \
+        fig, \
+        axis_len, \
+        angular_velocity_b, \
+        ln_w_b, \
+        omega1_b, \
+        omega2_b, \
+        omega3_b, \
+        angular_velocity_l, \
+        e1, e2, e3, \
+        ln_w_l, \
+        omega1_l, \
+        omega2_l, \
+        omega3_l
 
-# Axes 1 and 3
-ax1.set_title('Body frame', fontdict={'size': 15})
-lim1 = np.max(np.abs(w_body))
-ax1.set_xlim([-lim1, lim1])
-ax1.set_ylim([-lim1, lim1])
-ax1.set_zlim([-lim1, lim1])
-ax3.set_title('Lab frame', fontdict={'size': 15})
-lim3 = np.max(np.abs(w_lab))
-ax3.set_xlim([-lim3, lim3])
-ax3.set_ylim([-lim3, lim3])
-ax3.set_zlim([-lim3, lim3])
-# Style axes
-val1 = [lim1 * 1.5, 0, 0]
-val3 = [lim3 * 1.5, 0, 0]
-labels1 = ["$X_1$", "$X_2$", "$X_3$"]
-labels3 = ["$X_1'$", "$X_2'$", "$X_3'$"]
-for i in range(3):
-    xyz = [-val1[i-0], -val1[i-1], -val1[i-2]]
-    uvw = [2 * val1[i-0], 2 * val1[i-1], 2 * val1[i-2]]
-    ax1.quiver(*xyz, *uvw, color='k', arrow_length_ratio=.05)
-    ax1.text(val1[i-0], val1[i-1], val1[i-2], labels1[i], fontsize=15)
-    xyz = [-val3[i-0], -val3[i-1], -val3[i-2]]
-    uvw = [2 * val3[i-0], 2 * val3[i-1], 2 * val3[i-2]]
-    ax3.quiver(*xyz, *uvw, color='k', arrow_length_ratio=.05)
-    ax3.text(val3[i-0], val3[i-1], val3[i-2], labels3[i], fontsize=15)
-# Hide everything default
-ax1.xaxis.set_pane_color((1, 1, 1, 0))
-ax1.yaxis.set_pane_color((1, 1, 1, 0))
-ax1.zaxis.set_pane_color((1, 1, 1, 0))
-ax1._axis3don = False
-ax3.xaxis.set_pane_color((1, 1, 1, 0))
-ax3.yaxis.set_pane_color((1, 1, 1, 0))
-ax3.zaxis.set_pane_color((1, 1, 1, 0))
-ax3._axis3don = False
-
-# Axes 2 and 4
-ax2.set_xlabel('t (s)')
-ax2.set_ylabel('$\omega$ (rad/s)')
-minw_body = np.min(w_body)
-minw_body = minw_body if np.abs(minw_body) > .1 else -.1
-maxw_body = np.max(w_body)
-maxw_body = maxw_body if np.abs(maxw_body) > .1 else .1
-ax2.set_xlim([0, t[-1]])
-ax2.set_ylim([minw_body - .1 * np.abs(minw_body), maxw_body + .1 * np.abs(maxw_body)])
-ax4.set_xlabel('t (s)')
-ax4.set_ylabel('$\omega$ (rad/s)')
-minw_lab = np.min(w_lab)
-minw_lab = minw_lab if np.abs(minw_lab) > .1 else -.1
-maxw_lab = np.max(w_lab)
-maxw_lab = maxw_lab if np.abs(maxw_lab) > .1 else .1
-ax4.set_xlim([0, t[-1]])
-ax4.set_ylim([minw_lab - .1 * np.abs(minw_lab), maxw_lab + .1 * np.abs(maxw_lab)])
-
-# Animation
-axis_len = .7 * np.linalg.norm(w0_lab)
-angular_velocity_b, = ax1.plot([], [], [], color='b', lw=2.5, alpha=.6, label=r'$\vec{\omega}$')
-ln_w_b, = ax1.plot([], [], [], color='b', lw=1.2)
-omega1_b, = ax2.plot([], [], label=r'$\omega_1$')
-omega2_b, = ax2.plot([], [], label=r'$\omega_2$')
-omega3_b, = ax2.plot([], [], label=r'$\omega_3$')
-angular_velocity_l, = ax3.plot([], [], [], color='b', lw=2.5, alpha=.6, label=r'$\vec{\omega}$')
-e1, = ax3.plot([], [], [], lw=2.5, alpha=.6, label=r'$\vec{e}_1$')
-e2, = ax3.plot([], [], [], lw=2.5, alpha=.6, label=r'$\vec{e}_2$')
-e3, = ax3.plot([], [], [], lw=2.5, alpha=.6, label=r'$\vec{e}_3$') 
-ln_w_l, = ax3.plot([], [], [], color='b', lw=1.2)
-omega1_l, = ax4.plot([], [], label=r'$\omega_1$')
-omega2_l, = ax4.plot([], [], label=r'$\omega_2$')
-omega3_l, = ax4.plot([], [], label=r'$\omega_3$')
-ax1.legend(loc='upper right')
-ax2.legend(loc='upper right')
-ax3.legend(loc='upper right')
-ax4.legend(loc='upper right')
 def func(i):
     angular_velocity_b.set_data_3d(*zip(np.zeros(3), w_body[:, i]))
     ln_w_b.set_data_3d(w_body[:, :i])
@@ -160,15 +167,30 @@ def func(i):
         omega2_b, \
         omega3_b, \
         angular_velocity_l, \
-        e1, \
-        e2, \
-        e3, \
+        e1, e2, e3, \
         ln_w_l, \
         omega1_l, \
         omega2_l, \
         omega3_l
 
-ani = FuncAnimation(fig, func, frames=len(t), interval=50, blit=True)
-ani.save('rb_rotation.gif', writer='pillow', fps=int(1 / DT), dpi=100)
-
-plt.show()
+if __name__ == '__main__':
+    I, w0_body, A0, t = get_data()
+    w_body, A = rb_rotation.solve(I, w0_body, A0, t)
+    w_lab = np.einsum('jik,jk->ik', A, w_body) # A.T @ w_body
+    fig, \
+    axis_len, \
+    angular_velocity_b, \
+    ln_w_b, \
+    omega1_b, \
+    omega2_b, \
+    omega3_b, \
+    angular_velocity_l, \
+    e1, e2, e3, \
+    ln_w_l, \
+    omega1_l, \
+    omega2_l, \
+    omega3_l \
+    = init_figure(t, w_body, w_lab)
+    ani = FuncAnimation(fig, func, frames=len(t), interval=50, blit=True)
+    ani.save('rb_rotation.gif', writer='pillow', fps=int(1 / DT), dpi=100)
+    plt.show()
