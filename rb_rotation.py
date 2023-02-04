@@ -56,7 +56,7 @@ def solve(I, w0, A0, t):
                 [z, c, - s],
                 [z, s, c]
             ]) 
-        # Precession
+        # Precession of symmetry axis around L
         Op = np.array([I[i] * w0[i] for i in range(3)]) / I[i]
         Op0x = np.array([
             [0, Op[2], - Op[1]],
@@ -68,14 +68,14 @@ def solve(I, w0, A0, t):
         A = np.einsum('ijk,kjl,lm->imk', T1, T2, A0) # 3x3xn
         return w, A
     else: # Asymmetric
-        # Conserved quantities
-        l = np.sum([(I[i] * w0[i]) ** 2 for i in range(3)]) # L^2
-        e = np.sum([I[i] * w0[i] ** 2 for i in range(3)]) # 2T
-        L = np.sqrt(l)
         # Set intermediate axis as axis corresponding to median moment of inertia
         j = np.argsort(I)[len(I) // 2]
         k = (j + 1) % 3
         i = (j + 2) % 3
+        # Conserved quantities
+        l = np.sum([(I[i] * w0[i]) ** 2 for i in range(3)]) # L^2
+        e = np.sum([I[i] * w0[i] ** 2 for i in range(3)]) # 2T
+        L = np.sqrt(l)
         # Check ordering
         if (e > l / I[j] and I[i] < I[k]) or (e < l / I[j] and I[i] > I[k]):
             JacobiOrder = False
@@ -103,7 +103,7 @@ def solve(I, w0, A0, t):
             w[i], w[j], w[k] = w1, w2, w3
         else:
             w[i], w[j], w[k] = w3, - w2, w1
-        # Check ordering
+        # Align with invariant direction
         Lperp0 = np.sqrt((I1 * w10) ** 2 + (I2 * w20) ** 2)
         e10 = np.array([I1 * I3 * w10 * w30 / (L * Lperp0), - I2 * w20 / Lperp0, I1 * w10 / L])
         e20 = np.array([I2 * I3 * w20 * w30 / (L * Lperp0), I1 * w10 / Lperp0, I2 * w20 / L])
@@ -111,9 +111,24 @@ def solve(I, w0, A0, t):
         if JacobiOrder:
             T1t0 = np.array([e10, e20, e30]).T
         else:
-            T1t0 = np.array([e30, - e20, e30]).T
+            T1t0 = np.array([e30, - e20, e10]).T
+        # Permutation of coords
+        if j == 1:
+            U = np.eye(3)
+        elif j == 2:
+            U = np.array([
+                [0, 0, 1],
+                [1, 0, 0],
+                [0, 1, 0]
+            ])
+        else:
+            U = np.array([
+                [0, 1, 0],
+                [0, 0, 1],
+                [1, 0, 0]
+            ])
         # More useful quantities
-        B = T1t0 @ A0
+        B = T1t0 @ U @ A0
         K = sp.ellipk(m)
         Kp = sp.ellipk(1 - m)
         q = np.exp(- np.pi * Kp / K)
@@ -146,9 +161,9 @@ def solve(I, w0, A0, t):
         # Evolution in time
         Re_theta, Im_theta = np.zeros((2, len(t)))
         for n in range(NT):
-            U = (2 * n + 1) * np.pi * (wp * t + epsilon) / (2 * K)
-            Re_theta += cr[n] * np.sin(U)
-            Im_theta += ci[n] * np.cos(U)
+            M = (2 * n + 1) * np.pi * (wp * t + epsilon) / (2 * K)
+            Re_theta += cr[n] * np.sin(M)
+            Im_theta += ci[n] * np.cos(M)
         C = np.cos(A1 + A2 * t)
         S = np.sin(A1 + A2 * t)
         theta = np.linalg.norm([Re_theta, Im_theta], axis=0)
@@ -163,23 +178,10 @@ def solve(I, w0, A0, t):
         else:
             T1 = np.array([e3, - e2, e1]) # 3x3xn
         z, o = np.zeros(len(t)), np.ones(len(t))
-        if j == 1: 
-            T2 = np.array([
+        T2 = np.array([
                 [cos_psi, sin_psi, z],
                 [- sin_psi, cos_psi, z],
                 [z, z, o]
             ]) # 3x3xn
-        if j == 0:
-            T2 = np.array([
-                [cos_psi, z, - sin_psi],
-                [z, o, z],
-                [sin_psi, z, cos_psi]
-            ])
-        else:
-            T2 = np.array([
-                [o, z, z],
-                [z, cos_psi, sin_psi],
-                [z, - sin_psi, cos_psi]
-            ])
-        A = np.einsum('ijk,jlk,ln->ink', T1, T2, B)
+        A = np.einsum('ij,jkl,kml,mn->inl', U, T1, T2, B) # 3x3xn
         return w, A
