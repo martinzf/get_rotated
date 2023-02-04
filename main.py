@@ -169,6 +169,6 @@ def func(i):
         omega3_l
 
 ani = FuncAnimation(fig, func, frames=len(t), interval=50, blit=True)
-ani.save('rb_rotation.gif', writer='pillow', fps=50, dpi=100)
+ani.save('rb_rotation.gif', writer='pillow', fps=int(1 / DT), dpi=100)
 
 plt.show()

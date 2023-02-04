@@ -1,7 +1,7 @@
 # Get rotated
 
 ### About
-Python 3.11 code to study the inertial (force and torque free) motion of spinning tops.
+Python 3.11 code to study the inertial (torque free) motion of spinning tops.
 
 ### How to use
 1. Clone the repository and open its folder from the CLI.
