@@ -2,9 +2,10 @@ import numpy as np
 import rb_rotation
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+plt.style.use('fast')
 
 # Time step
-DT = .02 
+DT = .033 
 
 def request_float(prompt: str, positive: bool) -> float:
     # Gets user input
@@ -146,7 +147,7 @@ def init_figure(t, w_body, w_lab):
         omega2_l, \
         omega3_l
 
-def func(i):
+def animate(i):
     angular_velocity_b.set_data_3d(*zip(np.zeros(3), w_body[:, i]))
     ln_w_b.set_data_3d(w_body[:, :i])
     omega1_b.set_data(t[:i], w_body[0, :i])
@@ -191,6 +192,5 @@ if __name__ == '__main__':
     omega2_l, \
     omega3_l \
     = init_figure(t, w_body, w_lab)
-    ani = FuncAnimation(fig, func, frames=len(t), interval=50, blit=True)
-    ani.save('rb_rotation.gif', writer='pillow', fps=int(1 / DT), dpi=100)
+    ani = FuncAnimation(fig, animate, frames=len(t), interval=50, blit=True)
     plt.show()

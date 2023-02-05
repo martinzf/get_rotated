@@ -8,9 +8,9 @@ Python 3.11 code to study the inertial (torque free) motion of spinning tops.
 1. Run the command `pip install -r requirements.txt` to install dependencies.
 1. Run the command `python main.py` (or `python3 main.py` if both Python 2 and Python 3 are installed on your computer).
 1. You will be prompted to input information regarding the simulation. Press enter after answering each prompt.
-1. Wait while the animation loads. The programme will open an interactive Matplotlib window and save `rb_rotation.gif` to the project folder.
+1. Wait while the animation loads. The programme will open an interactive Matplotlib window.
 
-Warning: Solving the equations of motion is quick, but loading the animations takes time. I would therefore recommend short simulation times, on the order of 5-10s, if you just want to get acquainted with what the solutions look like. Take a look at the examples folder for some premade gifs too.
+I opted not to save animations due to how slow Matplotlib's `animation.save()` is. However, the examples folder does have some premade gifs you can check out.
 
 ### Preview
 ![alt text](preview.gif)
