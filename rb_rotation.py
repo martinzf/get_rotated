@@ -7,7 +7,7 @@ EPS = np.finfo(float).eps
 # Maximum iterations for A2 coefficient
 MAXITER = 10_000
 
-def solve(I, w0, A0, t):
+def solve(I: np.array, w0: np.array, A0: np.array, t: np.array) -> tuple[np.array]:
     if (np.count_nonzero(w0 == 0) == 2) or \
     w0[np.argmax(np.abs(I - np.median(I)))] == 0 or \
     (len(set(I)) == 1): # w along principal axis, axial symmetry and w3 = 0, or spherical symmetry

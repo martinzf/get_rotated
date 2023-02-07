@@ -1,5 +1,6 @@
 import numpy as np
 import rb_rotation
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 plt.style.use('fast')
@@ -20,7 +21,7 @@ def request_float(prompt: str, positive: bool) -> float:
         except ValueError:
             print(f'Input must be a float.') 
 
-def get_data():
+def get_data() -> tuple[np.array]:
     print(
         'We shall employ two reference frames: \n'
         '1. A body frame of principal axes of inertia, '
@@ -32,11 +33,13 @@ def get_data():
     I = []
     for i in range(1, 4):
         I.append(request_float(f'Moment of inertia I{i} (kg m^2): ', True))
+    I = np.array(I)
     # Initial angular velocity
     print('Input the initial angular velocity in the LAB FRAME.')
     w0_lab = []
     for i in range(1, 4):
         w0_lab.append(request_float(f'w{i} (rad/s): ', False))
+    w0_lab = np.array(w0_lab)
     # Initial transposed (inverse) attitude matrix
     print('Input the initial orientation of the body in the LAB FRAME: Rz(yaw) Ry(pitch) Rx(roll). ')
     roll = request_float('Roll (rad): ', False)
@@ -56,7 +59,9 @@ def get_data():
     return I, w0_body, A0, t
 
 # Plotting & animating
-def init_figure(t, w_body, w_lab):
+def init_figure(
+    t: np.array, w_body: np.array, w_lab: np.array
+    ) -> tuple[mpl.figure.Figure, float, mpl.lines.Line2D]:
     fig = plt.figure(figsize=(8, 6))
     ax1 = fig.add_subplot(2, 2, 1, projection='3d')
     ax2 = fig.add_subplot(2, 2, 2)
@@ -116,7 +121,7 @@ def init_figure(t, w_body, w_lab):
     # Artists
     axis_length = .7 * np.linalg.norm(w_body[:, 0])
     angular_velocity_b, = ax1.plot([], [], [], color='b', lw=2.5, alpha=.6, label=r'$\vec{\omega}$')
-    ln_w_b, = ax1.plot([], [], [], color='b', lw=1.2)
+    line_w_b, = ax1.plot([], [], [], color='b', lw=1.2)
     omega1_b, = ax2.plot([], [], label=r'$\omega_1$')
     omega2_b, = ax2.plot([], [], label=r'$\omega_2$')
     omega3_b, = ax2.plot([], [], label=r'$\omega_3$')
@@ -124,7 +129,7 @@ def init_figure(t, w_body, w_lab):
     e1, = ax3.plot([], [], [], lw=2.5, alpha=.6, label=r'$\vec{e}_1$')
     e2, = ax3.plot([], [], [], lw=2.5, alpha=.6, label=r'$\vec{e}_2$')
     e3, = ax3.plot([], [], [], lw=2.5, alpha=.6, label=r'$\vec{e}_3$') 
-    ln_w_l, = ax3.plot([], [], [], color='b', lw=1.2)
+    line_w_l, = ax3.plot([], [], [], color='b', lw=1.2)
     omega1_l, = ax4.plot([], [], label=r'$\omega_1$')
     omega2_l, = ax4.plot([], [], label=r'$\omega_2$')
     omega3_l, = ax4.plot([], [], label=r'$\omega_3$')
@@ -136,27 +141,27 @@ def init_figure(t, w_body, w_lab):
         fig, \
         axis_length, \
         angular_velocity_b, \
-        ln_w_b, \
+        line_w_b, \
         omega1_b, \
         omega2_b, \
         omega3_b, \
         angular_velocity_l, \
         e1, e2, e3, \
-        ln_w_l, \
+        line_w_l, \
         omega1_l, \
         omega2_l, \
         omega3_l
 
-def animate(i):
+def animate(i: int) -> tuple[mpl.lines.Line2D]:
     angular_velocity_b.set_data_3d(*zip(np.zeros(3), w_body[:, i]))
     line_w_b.set_data_3d(w_body[:, :i])
     omega1_b.set_data(t[:i], w_body[0, :i])
     omega2_b.set_data(t[:i], w_body[1, :i])
     omega3_b.set_data(t[:i], w_body[2, :i])
     angular_velocity_l.set_data_3d(*zip(np.zeros(3), w_lab[:, i]))
-    e1.set_data_3d(*zip(np.zeros(3), axis_len * A[0, :, i]))
-    e2.set_data_3d(*zip(np.zeros(3), axis_len * A[1, :, i]))
-    e3.set_data_3d(*zip(np.zeros(3), axis_len * A[2, :, i]))
+    e1.set_data_3d(*zip(np.zeros(3), axis_length * A[0, :, i]))
+    e2.set_data_3d(*zip(np.zeros(3), axis_length * A[1, :, i]))
+    e3.set_data_3d(*zip(np.zeros(3), axis_length * A[2, :, i]))
     line_w_l.set_data_3d(w_lab[:, :i])
     omega1_l.set_data(t[:i], w_lab[0, :i])
     omega2_l.set_data(t[:i], w_lab[1, :i])
@@ -179,7 +184,7 @@ if __name__ == '__main__':
     w_body, A = rb_rotation.solve(I, w0_body, A0, t)
     w_lab = np.einsum('jik,jk->ik', A, w_body) # A.T @ w_body
     fig, \
-    axis_len, \
+    axis_length, \
     angular_velocity_b, \
     line_w_b, \
     omega1_b, \
