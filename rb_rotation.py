@@ -69,7 +69,7 @@ def solve(I, w0, A0, t):
         return w, A
     else: # Asymmetric
         # Set intermediate axis as axis corresponding to median moment of inertia
-        j = np.argsort(I)[len(I) // 2]
+        j = np.argsort(I)[1]
         k = (j + 1) % 3
         i = (j + 2) % 3
         # Conserved quantities

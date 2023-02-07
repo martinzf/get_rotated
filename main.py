@@ -57,7 +57,7 @@ def get_data():
 
 # Plotting & animating
 def init_figure(t, w_body, w_lab):
-    fig = plt.figure(figsize=(10, 10))
+    fig = plt.figure(figsize=(8, 6))
     ax1 = fig.add_subplot(2, 2, 1, projection='3d')
     ax2 = fig.add_subplot(2, 2, 2)
     ax3 = fig.add_subplot(2, 2, 3, projection='3d')
