@@ -12,11 +12,10 @@ def solve(I, w0, A0, t):
     w0[np.argmax(np.abs(I - np.median(I)))] == 0 or \
     (len(set(I)) == 1): # w along principal axis, axial symmetry and w3 = 0, or spherical symmetry
         # Rotation
-        w0_lab = A0.T @ w0 
         W0 = np.array([
-            [0, w0_lab[2], - w0_lab[1]],
-            [- w0_lab[2], 0, w0_lab[0]],
-            [w0_lab[1], - w0_lab[0], 0]
+            [0, w0[2], - w0[1]],
+            [- w0[2], 0, w0[0]],
+            [w0[1], - w0[0], 0]
         ])
         W = np.einsum('k,ij->kij', t, W0)
         P = la.expm(W) # nx3x3

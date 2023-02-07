@@ -114,7 +114,7 @@ def init_figure(t, w_body, w_lab):
     ax4.set_xlim([0, t[-1]])
     ax4.set_ylim([minw_lab - .1 * np.abs(minw_lab), maxw_lab + .1 * np.abs(maxw_lab)])
     # Artists
-    axis_len = .7 * np.linalg.norm(w_body[:, 0])
+    axis_length = .7 * np.linalg.norm(w_body[:, 0])
     angular_velocity_b, = ax1.plot([], [], [], color='b', lw=2.5, alpha=.6, label=r'$\vec{\omega}$')
     ln_w_b, = ax1.plot([], [], [], color='b', lw=1.2)
     omega1_b, = ax2.plot([], [], label=r'$\omega_1$')
@@ -134,7 +134,7 @@ def init_figure(t, w_body, w_lab):
     ax4.legend(loc='upper right')
     return \
         fig, \
-        axis_len, \
+        axis_length, \
         angular_velocity_b, \
         ln_w_b, \
         omega1_b, \
@@ -149,7 +149,7 @@ def init_figure(t, w_body, w_lab):
 
 def animate(i):
     angular_velocity_b.set_data_3d(*zip(np.zeros(3), w_body[:, i]))
-    ln_w_b.set_data_3d(w_body[:, :i])
+    line_w_b.set_data_3d(w_body[:, :i])
     omega1_b.set_data(t[:i], w_body[0, :i])
     omega2_b.set_data(t[:i], w_body[1, :i])
     omega3_b.set_data(t[:i], w_body[2, :i])
@@ -157,19 +157,19 @@ def animate(i):
     e1.set_data_3d(*zip(np.zeros(3), axis_len * A[0, :, i]))
     e2.set_data_3d(*zip(np.zeros(3), axis_len * A[1, :, i]))
     e3.set_data_3d(*zip(np.zeros(3), axis_len * A[2, :, i]))
-    ln_w_l.set_data_3d(w_lab[:, :i])
+    line_w_l.set_data_3d(w_lab[:, :i])
     omega1_l.set_data(t[:i], w_lab[0, :i])
     omega2_l.set_data(t[:i], w_lab[1, :i])
     omega3_l.set_data(t[:i], w_lab[2, :i])
     return \
         angular_velocity_b, \
-        ln_w_b, \
+        line_w_b, \
         omega1_b, \
         omega2_b, \
         omega3_b, \
         angular_velocity_l, \
         e1, e2, e3, \
-        ln_w_l, \
+        line_w_l, \
         omega1_l, \
         omega2_l, \
         omega3_l
@@ -181,13 +181,13 @@ if __name__ == '__main__':
     fig, \
     axis_len, \
     angular_velocity_b, \
-    ln_w_b, \
+    line_w_b, \
     omega1_b, \
     omega2_b, \
     omega3_b, \
     angular_velocity_l, \
     e1, e2, e3, \
-    ln_w_l, \
+    line_w_l, \
     omega1_l, \
     omega2_l, \
     omega3_l \
