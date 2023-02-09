@@ -46,7 +46,7 @@ $$\begin{align*}
     -W(\tilde{\vec{\omega}}) A &= \dot{A}
 \end{align*}$$
 
-This matrix ODE could easily be solved numerically, however it turns out that the problem has an analytic solution!! I've implemented the algorithm outlined in van Zon et al., 2007 in order to calculate the $A$ matrix at any time $t$.
+This matrix ODE could easily be solved numerically, however it turns out that the problem has an analytic solution!! I've implemented the algorithm outlined in van Zon & Schofield, 2007 in order to calculate the $A$ matrix at any time $t$.
 
 ### References
 [van Zon, Ramses & Schofield, Jeremy. (2007). Numerical implementation of the exact dynamics of free rigid bodies. Journal of Computational Physics. 225. 145-164. 10.1016/j.jcp.2006.11.019.](https://www.researchgate.net/publication/222535012_Numerical_implementation_of_the_exact_dynamics_of_free_rigid_bodies)
