@@ -52,4 +52,4 @@ This matrix ODE could easily be solved numerically, however it turns out that th
 [van Zon, Ramses & Schofield, Jeremy. (2007). Numerical implementation of the exact dynamics of free rigid bodies. Journal of Computational Physics. 225. 145-164. 10.1016/j.jcp.2006.11.019.](https://www.researchgate.net/publication/222535012_Numerical_implementation_of_the_exact_dynamics_of_free_rigid_bodies)
 
 ### Acknowledgements
-Many thanks to my Classical Mechanics teacher [Artemio González López](http://jacobi.fis.ucm.es/artemio/UCM/English.html) for helping me understand the problem and directing me to the article linked above.
+Many thanks to my Classical Mechanics professor [Artemio González López](http://jacobi.fis.ucm.es/artemio/UCM/English.html) for helping me understand the problem and directing me to the article linked above.

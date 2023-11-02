@@ -70,14 +70,14 @@ def init_figure(
     # Axes 1 and 3
     ax1.set_title('Body frame', fontdict={'size': 15})
     lim1 = np.max(np.abs(w_body))
-    ax1.set_xlim([-lim1, lim1])
-    ax1.set_ylim([-lim1, lim1])
-    ax1.set_zlim([-lim1, lim1])
+    ax1.set_xlim(-lim1, lim1)
+    ax1.set_ylim(-lim1, lim1)
+    ax1.set_zlim(-lim1, lim1)
     ax3.set_title('Lab frame', fontdict={'size': 15})
     lim3 = np.max(np.abs(w_lab))
-    ax3.set_xlim([-lim3, lim3])
-    ax3.set_ylim([-lim3, lim3])
-    ax3.set_zlim([-lim3, lim3])
+    ax3.set_xlim(-lim3, lim3)
+    ax3.set_ylim(-lim3, lim3)
+    ax3.set_zlim(-lim3, lim3)
     # Style axes
     val1 = [lim1 * 1.5, 0, 0]
     val3 = [lim3 * 1.5, 0, 0]
@@ -125,14 +125,14 @@ def init_figure(
     omega1_b, = ax2.plot([], [], label=r'$\omega_1$')
     omega2_b, = ax2.plot([], [], label=r'$\omega_2$')
     omega3_b, = ax2.plot([], [], label=r'$\omega_3$')
-    angular_velocity_l, = ax3.plot([], [], [], color='b', lw=2.5, alpha=.6, label=r'$\vec{\omega}$')
+    angular_velocity_l, = ax3.plot([], [], [], color='b', lw=2.5, alpha=.6, label=r"$\vec{\omega}$")
     e1, = ax3.plot([], [], [], lw=2.5, alpha=.6, label=r'$\vec{e}_1$')
     e2, = ax3.plot([], [], [], lw=2.5, alpha=.6, label=r'$\vec{e}_2$')
     e3, = ax3.plot([], [], [], lw=2.5, alpha=.6, label=r'$\vec{e}_3$') 
     line_w_l, = ax3.plot([], [], [], color='b', lw=1.2)
-    omega1_l, = ax4.plot([], [], label=r'$\omega_1$')
-    omega2_l, = ax4.plot([], [], label=r'$\omega_2$')
-    omega3_l, = ax4.plot([], [], label=r'$\omega_3$')
+    omega1_l, = ax4.plot([], [], label=r"$\omega_1$")
+    omega2_l, = ax4.plot([], [], label=r"$\omega_2$")
+    omega3_l, = ax4.plot([], [], label=r"$\omega_3$")
     ax1.legend(loc='upper right')
     ax2.legend(loc='upper right')
     ax3.legend(loc='upper right')
@@ -197,5 +197,5 @@ if __name__ == '__main__':
     omega2_l, \
     omega3_l \
     = init_figure(t, w_body, w_lab)
-    ani = FuncAnimation(fig, animate, frames=len(t), interval=50, blit=True)
+    ani = FuncAnimation(fig, animate, frames=len(t), interval=DT*1e3, blit=True)
     plt.show()
